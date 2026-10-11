@@ -9,8 +9,9 @@ extends Node
 ##   throttle / brake  : {id, axis, rest, full}     value released / fully pressed (inverted axes are handled)
 ##
 ## Menu navigation: the wheel's POV hat is sent as ui_up / ui_right / ui_down / ui_left (auto-repeat after
-## 0.35 s, then every 0.12 s). Buttons can be bound to ui_accept / ui_cancel and to any InputMap action the
-## game registers with register_action(). Joypad events Godot itself generates for bound devices are dropped,
+## 0.35 s, then every 0.12 s). Wheels whose d-pad reports buttons instead of a hat can bind those buttons to
+## the same four directions (same auto-repeat). Buttons can also be bound to ui_accept / ui_cancel and to any
+## InputMap action the game registers with register_action(). Joypad events Godot itself generates for bound devices are dropped,
 ## so the wheel does not also act as a gamepad.
 ##
 ## Nothing happens when the bridge or a wheel is missing: keyboard and gamepads keep working.
@@ -24,7 +25,8 @@ const PORT_FAKE := 49351             # virtual test devices use another port, so
 const CONFIG_PATH := "user://wheel_ffb.cfg"
 const BRIDGE_RES_PATH := "res://addons/wheel_ffb/bin/WheelBridge.exe"
 const AXIS_NAMES: Array[String] = ["X", "Y", "Z", "Rx", "Ry", "Rz", "S0", "S1"]
-const MENU_ACTIONS: Array[String] = ["ui_accept", "ui_cancel"]
+const MENU_ACTIONS: Array[String] = ["ui_accept", "ui_cancel", "ui_up", "ui_down", "ui_left", "ui_right"]
+const DIRECTION_ACTIONS: Array[String] = ["ui_up", "ui_down", "ui_left", "ui_right"]
 const POV_REPEAT_FIRST := 0.35
 const POV_REPEAT_NEXT := 0.12
 
@@ -48,6 +50,10 @@ var buttons: Dictionary = {}        # action -> {id, btn}
 var action_labels: Dictionary = {
 	"ui_accept": ["Accept", "Press the focused menu button"],
 	"ui_cancel": ["Back", "Close a menu / go back"],
+	"ui_up": ["Menu up", "Only for d-pads that are buttons (a hat switch works without this)"],
+	"ui_down": ["Menu down", ""],
+	"ui_left": ["Menu left", ""],
+	"ui_right": ["Menu right", ""],
 }
 
 # --- runtime state ----------------------------------------------------------
@@ -73,6 +79,7 @@ var _axes_time: Dictionary = {}
 var _bits: Dictionary = {}          # device index -> hex string of button bits
 var _id_to_index: Dictionary = {}
 var _btn_prev: Dictionary = {}
+var _btn_repeat: Dictionary = {}   # direction action held on a button -> next repeat time (s)
 var _devs_sig := ""
 
 var pov := -1                       # POV of the steering device in degrees (-1 = centred)
@@ -222,6 +229,7 @@ func _process(delta: float) -> void:
 	if capture_kind != "":
 		_capture_step(t)
 	_pov_step(t)
+	_button_repeat_step(t)
 	_test_step(delta)
 
 
@@ -392,6 +400,11 @@ func _buttons_changed(i: int) -> void:
 			_btn_prev[key] = now
 			if InputMap.has_action(action):
 				_send_action(action, now)
+			if action in DIRECTION_ACTIONS:
+				if now:
+					_btn_repeat[action] = Time.get_ticks_msec() * 0.001 + POV_REPEAT_FIRST
+				else:
+					_btn_repeat.erase(action)
 
 
 func _send_action(action: String, pressed: bool) -> void:
@@ -436,6 +449,21 @@ func _pov_step(t: float) -> void:
 	elif t >= _pov_next:
 		_pov_next = t + POV_REPEAT_NEXT
 		_send_action(_pov_action, true)
+
+
+## Direction buttons held down repeat like the hat switch (released when the link drops or during a capture).
+func _button_repeat_step(t: float) -> void:
+	if _btn_repeat.is_empty():
+		return
+	if not connected or capture_kind != "":
+		for a: String in _btn_repeat.keys():
+			_send_action(a, false)
+		_btn_repeat.clear()
+		return
+	for a: String in _btn_repeat.keys():
+		if t >= float(_btn_repeat[a]):
+			_btn_repeat[a] = t + POV_REPEAT_NEXT
+			_send_action(a, true)
 
 
 ## Drop Godot's own joypad events from bound devices (otherwise the wheel also acts as a gamepad).

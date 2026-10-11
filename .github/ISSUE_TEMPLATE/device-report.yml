@@ -1,0 +1,51 @@
+name: Device report
+description: Tell us whether your wheel / pedals work (input and force feedback)
+title: "[Device] "
+labels: ["device report"]
+body:
+  - type: input
+    id: device
+    attributes:
+      label: Device(s)
+      description: Wheel base, wheel rim, pedals, shifter (maker and model)
+      placeholder: e.g. Logitech G923 (PC/PS) + stock pedals
+    validations:
+      required: true
+  - type: input
+    id: driver
+    attributes:
+      label: Driver / vendor software and version
+      placeholder: e.g. G HUB 2026.x
+  - type: dropdown
+    id: input
+    attributes:
+      label: Input (steering, pedals, buttons)
+      options: ["Works", "Partly works", "Does not work"]
+    validations:
+      required: true
+  - type: dropdown
+    id: ffb
+    attributes:
+      label: Force feedback
+      options: ["Works", "Partly works", "Does not work", "Device has no FFB"]
+    validations:
+      required: true
+  - type: textarea
+    id: list
+    attributes:
+      label: Output of `WheelBridge.exe --list`
+      render: text
+  - type: textarea
+    id: ffbtest
+    attributes:
+      label: What happened with `WheelBridge.exe --ffbtest <index>` / the in-game FFB test
+      description: Did you feel the centering spring, the push left/right, the damper, the vibration? Which way did the FFB test pull?
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else (strength that felt right, axes, hat switch or d-pad buttons, problems)
+  - type: input
+    id: versions
+    attributes:
+      label: Godot version / addon version
+      placeholder: Godot 4.7.2 / Wheel FFB 0.1.1

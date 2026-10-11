@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 - 2026-10-11
+
+- Menu up / down / left / right can be bound to wheel buttons (for wheels whose d-pad is buttons, not a hat
+  switch), with the same auto-repeat as the hat.
+- README: compatibility table (verified vs expected devices, what differs between devices) and a
+  "Device report" issue template.
+
 ## 0.1.0 - 2026-10-10
 
 First public version, extracted from the Sonnet Drive project.

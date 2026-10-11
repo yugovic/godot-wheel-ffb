@@ -10,3 +10,4 @@
 *.bat text eol=crlf
 *.exe binary
 /tools export-ignore
+/.github export-ignore

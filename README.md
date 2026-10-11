@@ -15,7 +15,8 @@ over localhost UDP. You get:
 - **Safety for direct-drive wheels** — low default strength, FFB stays off until the user confirms the force
   direction with a guided test, forces ramp up over 1 s, are slew-limited and fade to zero if the game stops
   updating them (pause, scene change, crash).
-- **Menu navigation** with the wheel's hat switch, and wheel buttons that fire your InputMap actions.
+- **Menu navigation** with the wheel's hat switch (or with d-pad buttons, for wheels that have no hat), and wheel
+  buttons that fire your InputMap actions.
 - **A setup screen** (`WheelSetupPanel`) built from plain Godot controls, so it follows your theme.
 - **Tests without hardware** — the bridge can emulate a wheel and pedals (`--wheel-fake`).
 
@@ -23,9 +24,34 @@ over localhost UDP. You get:
 |---|---|
 | ![demo](docs/demo.png) | ![setup](docs/setup.png) |
 
-> **Status: early (0.1.0).** Input and FFB have been verified on a Simagic Alpha Series wheelbase (Alpha U) and
-> Heusinkveld Sim Pedals Sprint. Other DirectInput wheels should work but have not been tested yet — reports welcome.
-> Windows only (DirectInput). Tested with Godot 4.7.2.
+> **Status: early (0.1.x).** Verified on one setup so far (see [Compatibility](#compatibility)). Other DirectInput
+> wheels should work but have not been tested yet — reports welcome. Windows only (DirectInput). Tested with Godot 4.7.2.
+
+## Compatibility
+
+The bridge only uses standard DirectInput (no vendor SDKs). Most PC wheels expose their input and force feedback
+through DirectInput once the vendor driver is installed, so they are *expected* to work. Only the rows marked
+**verified** have actually been tested.
+
+| Device | Type | Input | FFB | Notes |
+|---|---|---|---|---|
+| Simagic Alpha Series wheelbase (Alpha U) | wheel base, direct drive | **verified** | **verified** | FFB direction needed "invert" (set automatically by the FFB test). All 5 effect types are created |
+| Heusinkveld Sim Pedals Sprint | pedals (load-cell brake) | **verified** | – | Axes Rx / Ry / Rz. A normal brake press moves the axis only 5–15 %: assign it with your hard-braking force |
+| Logitech G29 / G920 / G923, Thrustmaster T300 / T248 / TS-PC, Fanatec, Moza, Simucube, Asetek, Cammus, … | | expected | expected | not tested yet — please report |
+
+What usually differs between devices, and how the addon handles it:
+
+- **Axis numbers and directions** — found by "Assign" (turn / press), inverted pedals are calibrated.
+- **Force direction** — set by the guided FFB test.
+- **Supported effects** — only the effects the device can create are used (constant force is the important one).
+- **Strength / feel** — belt and gear drives feel much weaker than direct drives at the same setting: raise
+  "Strength" for those.
+- **Rotation range** — cannot be set from the game through DirectInput: enter the range you set in the vendor software.
+- **D-pad as buttons instead of a hat switch** — bind them to Menu up / down / left / right in the setup screen.
+- **Vendor software holding the wheel exclusively** — FFB shows "busy"; close it or disable its exclusive mode.
+
+**Report a device:** open an issue with the "Device report" template. The output of
+`addons/wheel_ffb/bin/WheelBridge.exe --list` and the result of `--ffbtest` are the most useful parts.
 
 ## Install
 
@@ -101,6 +127,7 @@ inside `send_ffb`. Nothing is sent until the user has confirmed the direction wi
 | `steer_value()` | -1..1, right positive. Wheel rotation range (`wheel_range`) mapped to the car's `lock_to_lock` |
 | `pedal_value("throttle" \| "brake")` | 0..1 |
 | `button_down(action)` | a bound button is held |
+| menu directions | the hat switch, or buttons bound to `ui_up` / `ui_down` / `ui_left` / `ui_right`, repeat after 0.35 s, then every 0.12 s |
 | `register_action(action, label, hint)` | let a wheel button trigger an InputMap action |
 | `send_ffb(constant, spring, damper, friction, vibration, vibration_ms)` | this frame's force feedback |
 | `ffb_block_reason()` | why FFB cannot run right now (`""` = ready) |
@@ -171,8 +198,9 @@ Godot 4（Windows）向けの、ハンコンとペダルの**入力とフォー�
 - FFB: 定常力・スプリング・ダンパー・フリクション・振動。`VehicleBody3D` 用の補助クラス付き（限界を超えると軽くなる自己整列トルク）
 - ダイレクトドライブ向けの安全策: 既定の強さは控えめ、力の向きをテストで確認するまで FFB は ON にならない、
   1 秒かけて立ち上げ、急な変化を制限、ゲームからの更新が途絶えたら自動で 0
-- ハンコンの十字キーでメニュー操作、ボタンをゲームの InputMap のアクションに割り当て
+- ハンコンの十字キー（ハットスイッチ。ボタンとして出る十字キーは割り当てて）でメニュー操作、ボタンをゲームの InputMap のアクションに割り当て
 - 設定画面（`WheelSetupPanel`）付き。実機なしで試せる仮想デバイス（`--wheel-fake`）とテスト付き
 
 確認済みの実機は Simagic Alpha シリーズのベース（Alpha U）と Heusinkveld Sim Pedals Sprint だけです。
-ほかのハンコンでの動作報告を歓迎します。使い方は上の英語の節を見てください。
+標準の DirectInput だけを使っているので、ほかの PC 向けハンコンも動く見込みですが未確認です（上の Compatibility の表）。
+動作報告は Issue の「Device report」から歓迎します。使い方は上の英語の節を見てください。

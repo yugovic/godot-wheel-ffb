@@ -1,7 +1,7 @@
 extends Node3D
 ## Headless tests for the Wheel FFB addon. No hardware needed: --wheel-fake makes WheelBridge emulate a wheel
 ## (steering swings left/right, buttons, FFB) and pedals on its own port (49351).
-##   godot --headless --path . res://tests/wheel_test.tscn -- --wheel-fake [--test=link|capture|pov|panel|revive|vehicle|all]
+##   godot --headless --path . res://tests/wheel_test.tscn -- --wheel-fake [--test=link|capture|pov|dirbtn|panel|revive|vehicle|all]
 ##   godot --headless --path . res://tests/wheel_test.tscn -- --test=real      (real devices: lists them, no FFB)
 
 var _fails := 0
@@ -24,6 +24,8 @@ func _ready() -> void:
 		await _test_capture()
 	if _which in ["all", "pov"]:
 		await _test_pov()
+	if _which in ["all", "dirbtn"]:
+		await _test_dirbtn()
 	if _which in ["all", "panel"]:
 		await _test_panel()
 	if _which in ["all", "revive"]:
@@ -291,6 +293,32 @@ func _test_pov() -> void:
 	WheelInput.pov_override = -2
 	WheelInput.bindings.clear()
 	layer.queue_free()
+
+
+# ------------------------------------------------------------------ d-pad buttons (wheels without a hat switch)
+func _test_dirbtn() -> void:
+	print("[dirbtn] menu directions bound to buttons")
+	if not await _need_fake():
+		_check(false, "bridge connected")
+		return
+	WheelInput.buttons["ui_down"] = {"id": "FAKE-0000-WHEEL", "btn": 0}
+	_ui_events.clear()
+	_down_times.clear()
+	# button 0 of the virtual wheel is held for ~1 s every 6 s
+	await _wait_until(func(): return _down_times.size() > 0, 7.0)
+	await _wait_until(func(): return not WheelInput.button_down("ui_down"), 2.0)
+	var n := _down_times.size()
+	var gaps := []
+	for i in range(1, n):
+		gaps.append(snappedf(_down_times[i] - _down_times[i - 1], 0.01))
+	var ok := n >= 3 and float(gaps[0]) >= 0.3 and float(gaps[0]) <= 0.5
+	for i in range(1, gaps.size()):
+		ok = ok and float(gaps[i]) >= 0.1 and float(gaps[i]) <= 0.2
+	_check(ok, "a held direction button repeats like the hat (%d presses, gaps %s)" % [n, str(gaps)])
+	_ui_events.clear()
+	await _wait_until(func(): return false, 1.0)
+	_check(int(_ui_events.get("ui_down", 0)) == 0, "no repeats after release")
+	WheelInput.buttons.erase("ui_down")
 
 
 # ------------------------------------------------------------------ setup panel
