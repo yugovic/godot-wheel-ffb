@@ -1,0 +1,28 @@
+; Engine configuration file.
+; Demo + tests for the Wheel FFB addon (addons/wheel_ffb).
+
+config_version=5
+
+[application]
+
+config/name="Wheel FFB Demo"
+config/description="Steering wheel + pedals input and force feedback for Godot (Windows, DirectInput)"
+run/main_scene="res://demo/demo.tscn"
+config/features=PackedStringArray("4.7", "Forward Plus")
+
+[autoload]
+
+WheelInput="*res://addons/wheel_ffb/wheel_input.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/wheel_ffb/plugin.cfg")
+
+[physics]
+
+common/physics_ticks_per_second=120

@@ -1,0 +1,12 @@
+# Keep the Asset Library download small: only the addon is needed in other projects
+/demo export-ignore
+/tests export-ignore
+/docs export-ignore
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/project.godot export-ignore
+*.gd text eol=lf
+*.cpp text eol=crlf
+*.bat text eol=crlf
+*.exe binary
+/tools export-ignore
